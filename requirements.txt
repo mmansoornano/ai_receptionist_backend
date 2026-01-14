@@ -1,0 +1,22 @@
+# Django Framework
+Django>=4.2.0
+djangorestframework>=3.14.0
+django-filter>=23.0
+django-cors-headers>=4.3.0
+
+# External Services
+twilio>=8.10.0  # For SMS/voice webhooks
+requests>=2.31.0  # For calling agent API
+
+# Voice Processing (STT/TTS service in backend/services/)
+faster-whisper>=0.10.0  # For local STT
+TTS>=0.22.0  # Coqui TTS for local TTS
+ffmpeg-python>=0.2.0  # For audio format conversion
+# Note: ffmpeg binary recommended (install separately: brew install ffmpeg)
+
+# Database
+psycopg2-binary>=2.9.0  # PostgreSQL adapter (for production)
+dj-database-url>=2.1.0  # Database URL parsing
+
+# Utilities
+python-dotenv>=1.0.0

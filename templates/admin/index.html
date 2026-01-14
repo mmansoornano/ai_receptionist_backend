@@ -1,0 +1,14 @@
+{% extends "admin/index.html" %}
+
+{% block content %}
+{{ block.super }}
+<div class="module">
+    <h2>Quick Stats</h2>
+    <ul>
+        <li><strong>Total Customers:</strong> {{ total_customers }}</li>
+        <li><strong>Upcoming Appointments:</strong> {{ upcoming_appointments }}</li>
+        <li><strong>Today's Appointments:</strong> {{ today_appointments }}</li>
+        <li><strong>Recent Conversations:</strong> {{ recent_conversations }}</li>
+    </ul>
+</div>
+{% endblock %}
