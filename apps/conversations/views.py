@@ -7,11 +7,12 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django.http import JsonResponse
 from django.db.models import Q
 from django.utils import timezone
+import re
 from .models import Conversation
 from .serializers import (
     ConversationListSerializer, ConversationDetailSerializer, ConversationCreateSerializer
 )
-from apps.core.models import Customer
+from apps.core.models import Customer, Order
 from apps.core.permissions import IsUser, IsUserOrAdmin
 from apps.conversations.services import (
     get_or_create_conversation, add_message_to_conversation
@@ -401,7 +402,34 @@ class ConversationViewSet(viewsets.ViewSet):
 
             # Return conversation with updated messages
             serializer = ConversationDetailSerializer(conversation)
-            return JsonResponse(serializer.data, status=status.HTTP_201_CREATED)
+            response_data = serializer.data
+
+            # Attach order confirmation if order was created in this response
+            order_confirmation = None
+            try:
+                if agent_response:
+                    match = re.search(r'ORD\d{6}', agent_response)
+                    if match:
+                        order_id = match.group(0)
+                        order = Order.objects.filter(order_id=order_id).first()
+                        if order:
+                            delivery_fee = 150.0
+                            delivery_address = customer.delivery_address if customer else None
+                            order_confirmation = {
+                                'order_id': order.order_id,
+                                'items': order.items or [],
+                                'total': float(order.total),
+                                'delivery_fee': delivery_fee,
+                                'total_with_delivery': float(order.total) + delivery_fee,
+                                'delivery_address': delivery_address
+                            }
+            except Exception:
+                order_confirmation = None
+
+            if order_confirmation:
+                response_data['order_confirmation'] = order_confirmation
+
+            return JsonResponse(response_data, status=status.HTTP_201_CREATED)
         except Exception as e:
             import traceback
             from django.conf import settings

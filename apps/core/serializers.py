@@ -4,6 +4,8 @@ from .models import Customer, Appointment, Cart, CartItem, Payment, Order, Cance
 from .product_catalog import get_product_name, get_product_price, is_valid_product
 from django.db.models import Sum
 
+DELIVERY_FEE = 150.0
+
 
 class CustomerSerializer(serializers.ModelSerializer):
     customer_id = serializers.SerializerMethodField()
@@ -166,6 +168,11 @@ class PaymentOrderCustomerMixin:
     def _get_customer_from_order(self, order):
         if not order:
             return None
+        if getattr(order, "customer_id", None):
+            try:
+                return Customer.objects.filter(user_id=int(order.customer_id)).first()
+            except (ValueError, TypeError):
+                pass
         payment = order.payments.first()
         return self._get_customer_from_payment(payment) if payment else None
 
@@ -319,6 +326,9 @@ class OrderListSerializer(PaymentOrderCustomerMixin, serializers.ModelSerializer
     service_type = serializers.SerializerMethodField()
     date = serializers.DateTimeField(source='created_at', read_only=True)
     amount = serializers.DecimalField(source='total', max_digits=10, decimal_places=2, read_only=True)
+    total = serializers.DecimalField(source='total', max_digits=10, decimal_places=2, read_only=True)
+    delivery_fee = serializers.SerializerMethodField()
+    total_with_delivery = serializers.SerializerMethodField()
     currency = serializers.SerializerMethodField()
     payment_status = serializers.SerializerMethodField()
     items = serializers.JSONField(source='items', read_only=True)
@@ -329,7 +339,8 @@ class OrderListSerializer(PaymentOrderCustomerMixin, serializers.ModelSerializer
         model = Order
         fields = [
             'id', 'order_id', 'customer_id', 'customer_name', 'service', 'service_type',
-            'date', 'status', 'amount', 'currency', 'payment_status', 'items',
+            'date', 'status', 'amount', 'total', 'delivery_fee', 'total_with_delivery',
+            'currency', 'payment_status', 'items',
             'delivery_address', 'payment_link', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'order_id', 'created_at', 'updated_at']
@@ -397,6 +408,14 @@ class OrderListSerializer(PaymentOrderCustomerMixin, serializers.ModelSerializer
             return f"https://payment.example.com/pay/{payment.transaction_id}"
         return None
 
+    def get_delivery_fee(self, obj):
+        """Flat delivery fee for orders."""
+        return DELIVERY_FEE
+
+    def get_total_with_delivery(self, obj):
+        """Total amount including delivery fee."""
+        return float(obj.total) + DELIVERY_FEE
+
 
 class OrderDetailSerializer(PaymentOrderCustomerMixin, serializers.ModelSerializer):
     """Serializer for single order matching API spec."""
@@ -410,6 +429,9 @@ class OrderDetailSerializer(PaymentOrderCustomerMixin, serializers.ModelSerializ
     date = serializers.DateTimeField(source='created_at', read_only=True)
     duration_minutes = serializers.SerializerMethodField()
     amount = serializers.DecimalField(source='total', max_digits=10, decimal_places=2, read_only=True)
+    total = serializers.DecimalField(source='total', max_digits=10, decimal_places=2, read_only=True)
+    delivery_fee = serializers.SerializerMethodField()
+    total_with_delivery = serializers.SerializerMethodField()
     currency = serializers.SerializerMethodField()
     payment_status = serializers.SerializerMethodField()
     notes = serializers.SerializerMethodField()
@@ -421,7 +443,8 @@ class OrderDetailSerializer(PaymentOrderCustomerMixin, serializers.ModelSerializ
         model = Order
         fields = [
             'id', 'order_id', 'customer_id', 'customer_name', 'customer_email', 'customer_phone',
-            'service', 'service_type', 'date', 'duration_minutes', 'status', 'amount', 'currency',
+            'service', 'service_type', 'date', 'duration_minutes', 'status',
+            'amount', 'total', 'delivery_fee', 'total_with_delivery', 'currency',
             'payment_status', 'items', 'delivery_address', 'payment_link', 'notes',
             'created_at', 'updated_at'
         ]
@@ -505,17 +528,36 @@ class OrderDetailSerializer(PaymentOrderCustomerMixin, serializers.ModelSerializ
         """Get notes."""
         return None  # Not stored in current model
 
+    def get_delivery_fee(self, obj):
+        """Flat delivery fee for orders."""
+        return DELIVERY_FEE
+
+    def get_total_with_delivery(self, obj):
+        """Total amount including delivery fee."""
+        return float(obj.total) + DELIVERY_FEE
+
 
 class OrderSerializer(serializers.ModelSerializer):
     """Serializer for orders matching API spec."""
     order_id = serializers.CharField(source='order_id', read_only=True)
+    delivery_fee = serializers.SerializerMethodField()
+    total_with_delivery = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
         fields = [
-            'order_id', 'transaction_id', 'items', 'total', 'status', 'created_at'
+            'order_id', 'transaction_id', 'items', 'total', 'delivery_fee',
+            'total_with_delivery', 'status', 'created_at'
         ]
         read_only_fields = ['order_id', 'created_at']
+
+    def get_delivery_fee(self, obj):
+        """Flat delivery fee for orders."""
+        return DELIVERY_FEE
+
+    def get_total_with_delivery(self, obj):
+        """Total amount including delivery fee."""
+        return float(obj.total) + DELIVERY_FEE
 
 
 class CreateOrderSerializer(serializers.Serializer):

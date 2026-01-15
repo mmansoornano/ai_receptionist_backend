@@ -2,7 +2,9 @@
 from rest_framework import serializers
 from .models import Conversation
 from apps.core.serializers import CustomerSerializer, CartSerializer
-from apps.core.models import Cart, Payment
+from apps.core.models import Cart, Payment, Order
+
+DELIVERY_FEE = 150.0
 
 
 class CustomerNameMixin:
@@ -188,6 +190,7 @@ class ConversationDetailSerializer(CustomerNameMixin, serializers.ModelSerialize
     delivery_address = serializers.SerializerMethodField()
     payment_status = serializers.SerializerMethodField()
     payment_link = serializers.SerializerMethodField()
+    order_confirmation = serializers.SerializerMethodField()
     
     def get_messages(self, obj):
         """Get messages from JSONField and format them."""
@@ -211,6 +214,7 @@ class ConversationDetailSerializer(CustomerNameMixin, serializers.ModelSerialize
             'id', 'customer_id', 'customer_name', 'customer_email', 'customer_phone',
             'status', 'intent', 'messages',
             'cart_details', 'delivery_address', 'payment_status', 'payment_link',
+            'order_confirmation',
             'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
@@ -306,6 +310,26 @@ class ConversationDetailSerializer(CustomerNameMixin, serializers.ModelSerialize
             if payment and payment.transaction_id:
                 return f"https://payment.example.com/pay/{payment.transaction_id}"
             return None
+        except Exception:
+            return None
+
+    def get_order_confirmation(self, obj):
+        """Get latest order confirmation for the customer."""
+        try:
+            if not obj.customer or not obj.customer.user:
+                return None
+            customer_id = str(obj.customer.user.id)
+            order = Order.objects.filter(customer_id=customer_id).order_by('-created_at').first()
+            if not order:
+                return None
+            return {
+                'order_id': order.order_id,
+                'items': order.items or [],
+                'total': float(order.total),
+                'delivery_fee': DELIVERY_FEE,
+                'total_with_delivery': float(order.total) + DELIVERY_FEE,
+                'delivery_address': obj.customer.delivery_address or None
+            }
         except Exception:
             return None
 

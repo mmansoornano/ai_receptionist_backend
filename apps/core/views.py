@@ -1023,6 +1023,7 @@ class OrderViewSet(viewsets.ViewSet):
             # Create order
             order = Order.objects.create(
                 transaction_id=transaction_id,
+                customer_id=customer_id or None,
                 items=order_items,
                 total=total,
                 status='confirmed'

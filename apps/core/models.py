@@ -202,6 +202,7 @@ class Order(models.Model):
 
     order_id = models.CharField(max_length=50, unique=True, editable=False, help_text="Order ID like ORD123456")
     transaction_id = models.CharField(max_length=255, blank=True, null=True)
+    customer_id = models.CharField(max_length=255, blank=True, null=True, help_text="Canonical customer ID (user.id)")
     items = models.JSONField(default=list, help_text="List of order items with product_id, name, quantity, price")
     total = models.DecimalField(max_digits=10, decimal_places=2, help_text="Total amount")
     status = models.CharField(max_length=20, choices=ORDER_STATUS_CHOICES, default='pending')
