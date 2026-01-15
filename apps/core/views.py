@@ -98,6 +98,56 @@ class CustomerViewSet(viewsets.ModelViewSet):
                 'error': error_msg
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+    @action(detail=False, methods=['post'], url_path='address')
+    def update_address(self, request):
+        """Update delivery address for a customer. POST /api/customers/address/"""
+        try:
+            address = (request.data.get('delivery_address') or '').strip()
+            customer_id = request.data.get('customer_id')
+            phone = request.data.get('phone')
+
+            if not address:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Delivery address is required'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            customer = None
+            if request.user and request.user.is_authenticated and not request.user.is_staff:
+                customer = Customer.objects.filter(user=request.user).first()
+
+            if not customer and customer_id:
+                customer = Customer.objects.filter(user__id=customer_id).first() or Customer.objects.filter(id=customer_id).first()
+
+            if not customer and phone:
+                customer = Customer.objects.filter(phone=phone).first()
+
+            if not customer:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Customer not found'
+                }, status=status.HTTP_404_NOT_FOUND)
+
+            customer.delivery_address = address
+            customer.save(update_fields=['delivery_address'])
+
+            serializer = CustomerSerializer(customer)
+            return JsonResponse({
+                'success': True,
+                'customer': serializer.data
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            import traceback
+            from django.conf import settings
+            DEBUG = getattr(settings, 'DEBUG', False)
+            error_msg = str(e)
+            if DEBUG:
+                error_msg += f"\n\nTraceback:\n{traceback.format_exc()}"
+            return JsonResponse({
+                'success': False,
+                'error': error_msg
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
     def create(self, request):
         """Create or update customer. POST /api/customers/"""
         try:
@@ -112,6 +162,7 @@ class CustomerViewSet(viewsets.ModelViewSet):
             phone = data['phone']
             name = data['name']
             email = data.get('email', '')
+            delivery_address = data.get('delivery_address', '')
             customer_id = data.get('customer_id', '')
 
             # Get or create customer by phone
@@ -125,7 +176,12 @@ class CustomerViewSet(viewsets.ModelViewSet):
                 customer.name = name
                 if email:
                     customer.email = email
+                if delivery_address:
+                    customer.delivery_address = delivery_address
                 customer.save()
+            elif delivery_address:
+                customer.delivery_address = delivery_address
+                customer.save(update_fields=['delivery_address'])
 
             serializer = CustomerSerializer(customer)
             return JsonResponse(serializer.data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
@@ -167,8 +223,8 @@ class AppointmentViewSet(viewsets.ModelViewSet):
 
 
 class CartViewSet(viewsets.ViewSet):
-    """ViewSet for cart operations matching API spec - admin only."""
-    permission_classes = [IsAdmin]
+    """ViewSet for cart operations matching API spec."""
+    permission_classes = [AllowAny]
     
     def get_cart(self, customer_id='anonymous'):
         """Get or create cart based on customer_id.
@@ -186,6 +242,10 @@ class CartViewSet(viewsets.ViewSet):
     
     def get_customer_id_from_request(self, request, default='anonymous'):
         """Extract customer_id from request data or query params."""
+        # If an authenticated non-admin user is making the request, lock to their ID
+        if request.user and request.user.is_authenticated and not request.user.is_staff:
+            return str(request.user.id)
+
         # Try to get from request data (POST body)
         customer_id = None
         if hasattr(request, 'data') and request.data:

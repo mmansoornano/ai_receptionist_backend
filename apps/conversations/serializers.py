@@ -1,7 +1,8 @@
 """Serializers for conversations."""
 from rest_framework import serializers
 from .models import Conversation
-from apps.core.serializers import CustomerSerializer
+from apps.core.serializers import CustomerSerializer, CartSerializer
+from apps.core.models import Cart, Payment
 
 
 class CustomerNameMixin:
@@ -183,6 +184,10 @@ class ConversationDetailSerializer(CustomerNameMixin, serializers.ModelSerialize
     customer_phone = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
     messages = serializers.SerializerMethodField()
+    cart_details = serializers.SerializerMethodField()
+    delivery_address = serializers.SerializerMethodField()
+    payment_status = serializers.SerializerMethodField()
+    payment_link = serializers.SerializerMethodField()
     
     def get_messages(self, obj):
         """Get messages from JSONField and format them."""
@@ -204,7 +209,9 @@ class ConversationDetailSerializer(CustomerNameMixin, serializers.ModelSerialize
         model = Conversation
         fields = [
             'id', 'customer_id', 'customer_name', 'customer_email', 'customer_phone',
-            'status', 'intent', 'messages', 'created_at', 'updated_at'
+            'status', 'intent', 'messages',
+            'cart_details', 'delivery_address', 'payment_status', 'payment_link',
+            'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
 
@@ -245,6 +252,62 @@ class ConversationDetailSerializer(CustomerNameMixin, serializers.ModelSerialize
         if obj.updated_at > timezone.now() - timedelta(hours=24):
             return 'active'
         return 'completed'
+
+    def get_cart_details(self, obj):
+        """Get cart details for the customer."""
+        try:
+            if not obj.customer:
+                return None
+            customer_key = None
+            if obj.customer.user:
+                customer_key = str(obj.customer.user.id)
+            elif obj.customer.id:
+                customer_key = str(obj.customer.id)
+            if not customer_key:
+                return None
+            cart = Cart.objects.filter(customer_id=customer_key).first()
+            if cart:
+                return CartSerializer(cart).data
+            return None
+        except Exception:
+            return None
+
+    def get_delivery_address(self, obj):
+        """Get delivery address from customer profile."""
+        if obj.customer:
+            return obj.customer.delivery_address
+        return None
+
+    def get_payment_status(self, obj):
+        """Get latest payment status for customer."""
+        try:
+            if not obj.customer or not obj.customer.phone:
+                return None
+            payment = Payment.objects.filter(mobile_number=obj.customer.phone).order_by('-created_at').first()
+            if not payment:
+                return None
+            status_map = {
+                'confirmed': 'completed',
+                'otp_verified': 'pending',
+                'otp_sent': 'pending',
+                'pending': 'pending',
+                'failed': 'failed'
+            }
+            return status_map.get(payment.status, payment.status)
+        except Exception:
+            return None
+
+    def get_payment_link(self, obj):
+        """Get payment link from latest payment."""
+        try:
+            if not obj.customer or not obj.customer.phone:
+                return None
+            payment = Payment.objects.filter(mobile_number=obj.customer.phone).order_by('-created_at').first()
+            if payment and payment.transaction_id:
+                return f"https://payment.example.com/pay/{payment.transaction_id}"
+            return None
+        except Exception:
+            return None
 
 
 class ConversationCreateSerializer(serializers.Serializer):

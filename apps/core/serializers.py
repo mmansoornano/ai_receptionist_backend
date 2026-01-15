@@ -14,7 +14,7 @@ class CustomerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Customer
         fields = [
-            'id', 'customer_id', 'name', 'phone', 'email', 'preferences',
+            'id', 'customer_id', 'name', 'phone', 'email', 'preferences', 'delivery_address',
             'total_orders', 'total_spent', 'last_order_date',
             'created_at', 'updated_at'
         ]
@@ -68,6 +68,7 @@ class CustomerCreateSerializer(serializers.Serializer):
     name = serializers.CharField(required=True)
     email = serializers.EmailField(required=False, allow_blank=True)
     phone = serializers.CharField(required=True, max_length=20)
+    delivery_address = serializers.CharField(required=False, allow_blank=True)
 
 
 class AppointmentSerializer(serializers.ModelSerializer):
@@ -151,7 +152,25 @@ class PaymentConfirmSerializer(serializers.Serializer):
     order_id = serializers.CharField(required=False, allow_blank=True)
 
 
-class PaymentListSerializer(serializers.ModelSerializer):
+class PaymentOrderCustomerMixin:
+    """Helper mixin for resolving customer data from payments/orders."""
+
+    def _get_customer_from_payment(self, payment):
+        if not payment or not payment.mobile_number:
+            return None
+        try:
+            return Customer.objects.filter(phone=payment.mobile_number).first()
+        except Exception:
+            return None
+
+    def _get_customer_from_order(self, order):
+        if not order:
+            return None
+        payment = order.payments.first()
+        return self._get_customer_from_payment(payment) if payment else None
+
+
+class PaymentListSerializer(PaymentOrderCustomerMixin, serializers.ModelSerializer):
     """Serializer for payment list matching API spec."""
     id = serializers.CharField(source='id', read_only=True)
     payment_id = serializers.CharField(source='id', read_only=True)
@@ -165,13 +184,14 @@ class PaymentListSerializer(serializers.ModelSerializer):
     status = serializers.SerializerMethodField()
     transaction_id = serializers.CharField(read_only=True)
     date = serializers.DateTimeField(source='created_at', read_only=True)
+    payment_link = serializers.SerializerMethodField()
 
     class Meta:
         model = Payment
         fields = [
             'id', 'payment_id', 'order_id', 'customer_id', 'customer_name',
             'amount', 'currency', 'method', 'payment_method', 'status',
-            'transaction_id', 'date', 'created_at'
+            'transaction_id', 'payment_link', 'date', 'created_at'
         ]
         read_only_fields = ['id', 'payment_id', 'created_at']
 
@@ -181,11 +201,13 @@ class PaymentListSerializer(serializers.ModelSerializer):
 
     def get_customer_id(self, obj):
         """Get customer ID."""
-        return f"customer_{obj.id}"  # Simplified
+        customer = self._get_customer_from_payment(obj)
+        return customer.customer_id if customer else None
 
     def get_customer_name(self, obj):
         """Get customer name."""
-        return obj.mobile_number  # Use phone as name
+        customer = self._get_customer_from_payment(obj)
+        return customer.name if customer and customer.name else None
 
     def get_currency(self, obj):
         """Get currency."""
@@ -211,8 +233,14 @@ class PaymentListSerializer(serializers.ModelSerializer):
         }
         return status_map.get(obj.status, obj.status)
 
+    def get_payment_link(self, obj):
+        """Get payment link."""
+        if obj.transaction_id:
+            return f"https://payment.example.com/pay/{obj.transaction_id}"
+        return None
 
-class PaymentDetailSerializer(serializers.ModelSerializer):
+
+class PaymentDetailSerializer(PaymentOrderCustomerMixin, serializers.ModelSerializer):
     """Serializer for single payment matching API spec."""
     id = serializers.CharField(source='id', read_only=True)
     payment_id = serializers.CharField(source='id', read_only=True)
@@ -226,13 +254,14 @@ class PaymentDetailSerializer(serializers.ModelSerializer):
     status = serializers.SerializerMethodField()
     transaction_id = serializers.CharField(read_only=True)
     date = serializers.DateTimeField(source='created_at', read_only=True)
+    payment_link = serializers.SerializerMethodField()
 
     class Meta:
         model = Payment
         fields = [
             'id', 'payment_id', 'order_id', 'customer_id', 'customer_name',
             'amount', 'currency', 'method', 'payment_method', 'status',
-            'transaction_id', 'date', 'created_at'
+            'transaction_id', 'payment_link', 'date', 'created_at'
         ]
         read_only_fields = ['id', 'payment_id', 'created_at']
 
@@ -242,11 +271,13 @@ class PaymentDetailSerializer(serializers.ModelSerializer):
 
     def get_customer_id(self, obj):
         """Get customer ID."""
-        return f"customer_{obj.id}"
+        customer = self._get_customer_from_payment(obj)
+        return customer.customer_id if customer else None
 
     def get_customer_name(self, obj):
         """Get customer name."""
-        return obj.mobile_number
+        customer = self._get_customer_from_payment(obj)
+        return customer.name if customer and customer.name else None
 
     def get_currency(self, obj):
         """Get currency."""
@@ -272,8 +303,14 @@ class PaymentDetailSerializer(serializers.ModelSerializer):
         }
         return status_map.get(obj.status, obj.status)
 
+    def get_payment_link(self, obj):
+        """Get payment link."""
+        if obj.transaction_id:
+            return f"https://payment.example.com/pay/{obj.transaction_id}"
+        return None
 
-class OrderListSerializer(serializers.ModelSerializer):
+
+class OrderListSerializer(PaymentOrderCustomerMixin, serializers.ModelSerializer):
     """Serializer for order list matching API spec."""
     id = serializers.CharField(source='order_id', read_only=True)
     customer_id = serializers.SerializerMethodField()
@@ -284,36 +321,28 @@ class OrderListSerializer(serializers.ModelSerializer):
     amount = serializers.DecimalField(source='total', max_digits=10, decimal_places=2, read_only=True)
     currency = serializers.SerializerMethodField()
     payment_status = serializers.SerializerMethodField()
+    items = serializers.JSONField(source='items', read_only=True)
+    delivery_address = serializers.SerializerMethodField()
+    payment_link = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
         fields = [
             'id', 'order_id', 'customer_id', 'customer_name', 'service', 'service_type',
-            'date', 'status', 'amount', 'currency', 'payment_status', 'created_at', 'updated_at'
+            'date', 'status', 'amount', 'currency', 'payment_status', 'items',
+            'delivery_address', 'payment_link', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'order_id', 'created_at', 'updated_at']
 
     def get_customer_id(self, obj):
         """Get customer ID from payment."""
-        try:
-            payment = obj.payments.first()
-            if payment:
-                # Extract customer from payment mobile_number or create customer_id
-                return f"customer_{payment.id}"  # Simplified
-        except:
-            pass
-        return None
+        customer = self._get_customer_from_order(obj)
+        return customer.customer_id if customer else None
 
     def get_customer_name(self, obj):
         """Get customer name."""
-        # Try to get from payment
-        try:
-            payment = obj.payments.first()
-            if payment:
-                return payment.mobile_number  # Use phone as name fallback
-        except:
-            pass
-        return None
+        customer = self._get_customer_from_order(obj)
+        return customer.name if customer and customer.name else None
 
     def get_service(self, obj):
         """Get service name from order items."""
@@ -356,8 +385,20 @@ class OrderListSerializer(serializers.ModelSerializer):
             pass
         return 'pending'
 
+    def get_delivery_address(self, obj):
+        """Get delivery address from customer profile."""
+        customer = self._get_customer_from_order(obj)
+        return customer.delivery_address if customer else None
 
-class OrderDetailSerializer(serializers.ModelSerializer):
+    def get_payment_link(self, obj):
+        """Get payment link from latest payment."""
+        payment = obj.payments.first()
+        if payment and payment.transaction_id:
+            return f"https://payment.example.com/pay/{payment.transaction_id}"
+        return None
+
+
+class OrderDetailSerializer(PaymentOrderCustomerMixin, serializers.ModelSerializer):
     """Serializer for single order matching API spec."""
     id = serializers.CharField(source='order_id', read_only=True)
     customer_id = serializers.SerializerMethodField()
@@ -372,35 +413,29 @@ class OrderDetailSerializer(serializers.ModelSerializer):
     currency = serializers.SerializerMethodField()
     payment_status = serializers.SerializerMethodField()
     notes = serializers.SerializerMethodField()
+    items = serializers.JSONField(source='items', read_only=True)
+    delivery_address = serializers.SerializerMethodField()
+    payment_link = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
         fields = [
             'id', 'order_id', 'customer_id', 'customer_name', 'customer_email', 'customer_phone',
             'service', 'service_type', 'date', 'duration_minutes', 'status', 'amount', 'currency',
-            'payment_status', 'notes', 'created_at', 'updated_at'
+            'payment_status', 'items', 'delivery_address', 'payment_link', 'notes',
+            'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'order_id', 'created_at', 'updated_at']
 
     def get_customer_id(self, obj):
         """Get customer ID from payment."""
-        try:
-            payment = obj.payments.first()
-            if payment:
-                return f"customer_{payment.id}"
-        except:
-            pass
-        return None
+        customer = self._get_customer_from_order(obj)
+        return customer.customer_id if customer else None
 
     def get_customer_name(self, obj):
         """Get customer name."""
-        try:
-            payment = obj.payments.first()
-            if payment:
-                return payment.mobile_number
-        except:
-            pass
-        return None
+        customer = self._get_customer_from_order(obj)
+        return customer.name if customer and customer.name else None
 
     def get_customer_email(self, obj):
         """Get customer email."""
@@ -408,13 +443,8 @@ class OrderDetailSerializer(serializers.ModelSerializer):
 
     def get_customer_phone(self, obj):
         """Get customer phone."""
-        try:
-            payment = obj.payments.first()
-            if payment:
-                return payment.mobile_number
-        except:
-            pass
-        return None
+        customer = self._get_customer_from_order(obj)
+        return customer.phone if customer else None
 
     def get_service(self, obj):
         """Get service name."""
@@ -458,6 +488,18 @@ class OrderDetailSerializer(serializers.ModelSerializer):
         except:
             pass
         return 'pending'
+
+    def get_delivery_address(self, obj):
+        """Get delivery address from customer profile."""
+        customer = self._get_customer_from_order(obj)
+        return customer.delivery_address if customer else None
+
+    def get_payment_link(self, obj):
+        """Get payment link from latest payment."""
+        payment = obj.payments.first()
+        if payment and payment.transaction_id:
+            return f"https://payment.example.com/pay/{payment.transaction_id}"
+        return None
 
     def get_notes(self, obj):
         """Get notes."""

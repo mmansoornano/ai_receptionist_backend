@@ -42,6 +42,7 @@ class Customer(models.Model):
     phone = models.CharField(max_length=20, blank=True, null=True, help_text="Phone number (not unique)")
     email = models.EmailField(validators=[EmailValidator()], blank=True, null=True, help_text="Email address (not unique)")
     preferences = models.JSONField(default=dict, blank=True)
+    delivery_address = models.TextField(blank=True, null=True, help_text="Delivery address")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
