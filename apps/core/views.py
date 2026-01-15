@@ -286,13 +286,38 @@ class CartViewSet(viewsets.ViewSet):
 
             # Get product info from catalog
             if not is_valid_product(product_id):
+                # Try to find a similar product (for common variations like "gift-box" -> "gift-box-all-bars")
+                similar_products = Product.objects.filter(
+                    product_id__icontains=product_id,
+                    is_active=True
+                )[:1]
+                if similar_products.exists():
+                    similar_product = similar_products.first()
+                    return JsonResponse({
+                        'success': False,
+                        'error': f'Invalid product_id: {product_id}. Did you mean "{similar_product.product_id}"?',
+                        'suggested_product_id': similar_product.product_id
+                    }, status=status.HTTP_400_BAD_REQUEST)
                 return JsonResponse({
                     'success': False,
-                    'error': f'Invalid product_id: {product_id}'
+                    'error': f'Invalid product_id: {product_id}. Product not found in catalog.'
                 }, status=status.HTTP_400_BAD_REQUEST)
 
             product_name = get_product_name(product_id)
             product_price = get_product_price(product_id)
+            
+            # Validate product info was retrieved
+            if not product_name or product_name == product_id:
+                return JsonResponse({
+                    'success': False,
+                    'error': f'Product "{product_id}" not found in catalog'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            if product_price is None or product_price == 0:
+                return JsonResponse({
+                    'success': False,
+                    'error': f'Product "{product_id}" has invalid price'
+                }, status=status.HTTP_400_BAD_REQUEST)
 
             cart = self.get_cart(customer_id)
 
@@ -312,21 +337,46 @@ class CartViewSet(viewsets.ViewSet):
                 cart_item.quantity += quantity
                 cart_item.save()
 
-            cart_serializer = CartSerializer(cart)
-            return JsonResponse({
-                'success': True,
-                'cart': cart_serializer.data
-            }, status=status.HTTP_201_CREATED)
+            # Refresh cart from DB to ensure we have latest items
+            cart.refresh_from_db()
+            
+            try:
+                cart_serializer = CartSerializer(cart)
+                return JsonResponse({
+                    'success': True,
+                    'cart': cart_serializer.data
+                }, status=status.HTTP_201_CREATED)
+            except Exception as serialize_error:
+                import traceback
+                import logging
+                from django.conf import settings
+                DEBUG = getattr(settings, 'DEBUG', False)
+                error_msg = f"Error serializing cart: {str(serialize_error)}"
+                if DEBUG:
+                    error_msg += f"\n\nTraceback:\n{traceback.format_exc()}"
+                logger = logging.getLogger(__name__)
+                logger.error(f"Cart serializer error: {error_msg}")
+                return JsonResponse({
+                    'success': False,
+                    'error': error_msg
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         except Exception as e:
             import traceback
+            import logging
             from django.conf import settings
             DEBUG = getattr(settings, 'DEBUG', False)
             error_msg = str(e)
+            error_traceback = traceback.format_exc()
             if DEBUG:
-                error_msg += f"\n\nTraceback:\n{traceback.format_exc()}"
+                error_msg += f"\n\nTraceback:\n{error_traceback}"
+            # Log the error for debugging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Cart add_item error: {error_msg}\n{error_traceback}", exc_info=True)
             return JsonResponse({
                 'success': False,
-                'error': error_msg
+                'error': error_msg if DEBUG else 'An error occurred while adding item to cart',
+                'customer_id': customer_id if 'customer_id' in locals() else 'unknown',
+                'product_id': product_id if 'product_id' in locals() else 'unknown'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def list(self, request):

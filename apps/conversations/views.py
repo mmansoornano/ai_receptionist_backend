@@ -378,12 +378,19 @@ class ConversationViewSet(viewsets.ViewSet):
 
             # Call agent API
             try:
+                # For regular users, use user.id as customer_id (matches frontend)
+                # For admins or phone-based users, use customer.id
+                if not self._is_admin_user(request.user) and customer and customer.user:
+                    agent_customer_id = str(customer.user.id)
+                else:
+                    agent_customer_id = str(customer.id) if customer else None
+                
                 agent_response = _call_agent_api(
                     message=message,
                     phone_number=customer_phone,
                     channel='sms',
                     conversation_id=conversation.conversation_id,
-                    customer_id=str(customer.id) if customer else None
+                    customer_id=agent_customer_id
                 )
                 # Add agent response
                 add_message_to_conversation(conversation, 'assistant', agent_response)
@@ -395,6 +402,75 @@ class ConversationViewSet(viewsets.ViewSet):
             # Return conversation with updated messages
             serializer = ConversationDetailSerializer(conversation)
             return JsonResponse(serializer.data, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            import traceback
+            from django.conf import settings
+            DEBUG = getattr(settings, 'DEBUG', False)
+            error_msg = str(e)
+            if DEBUG:
+                error_msg += f"\n\nTraceback:\n{traceback.format_exc()}"
+            return JsonResponse({
+                'success': False,
+                'error': error_msg
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(detail=False, methods=['post'], url_path='reset')
+    def reset(self, request):
+        """Reset/clear conversation for a user. POST /api/conversations/reset/"""
+        try:
+            if not request.user.is_authenticated:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Authentication required'
+                }, status=status.HTTP_401_UNAUTHORIZED)
+
+            # Get customer_id from request or use authenticated user's ID
+            customer_id = request.data.get('customer_id')
+            user_id = request.user.id
+
+            # Non-admin users can only reset their own conversations
+            if not self._is_admin_user(request.user):
+                # Ensure customer_id matches user_id
+                if customer_id and str(customer_id) != str(user_id):
+                    return JsonResponse({
+                        'success': False,
+                        'error': 'You can only reset your own conversations'
+                    }, status=status.HTTP_403_FORBIDDEN)
+                customer_id = str(user_id)
+
+            # Find customer by user ID
+            try:
+                from apps.core.models import Customer
+                customer = Customer.objects.filter(user_id=int(customer_id)).first()
+                
+                if not customer:
+                    # Customer might not exist yet, which is fine for reset
+                    return JsonResponse({
+                        'success': True,
+                        'message': 'No conversations to reset'
+                    }, status=status.HTTP_200_OK)
+
+                # Delete all conversations for this customer
+                deleted_count = Conversation.objects.filter(customer=customer).delete()[0]
+
+                return JsonResponse({
+                    'success': True,
+                    'message': f'Reset {deleted_count} conversation(s)',
+                    'deleted_count': deleted_count
+                }, status=status.HTTP_200_OK)
+
+            except Exception as e:
+                import traceback
+                from django.conf import settings
+                DEBUG = getattr(settings, 'DEBUG', False)
+                error_msg = str(e)
+                if DEBUG:
+                    error_msg += f"\n\nTraceback:\n{traceback.format_exc()}"
+                return JsonResponse({
+                    'success': False,
+                    'error': error_msg
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
         except Exception as e:
             import traceback
             from django.conf import settings
