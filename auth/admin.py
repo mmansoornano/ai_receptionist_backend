@@ -1,3 +1,3 @@
 from django.contrib import admin
 
-# Register your models here.
+# User admin customization is in apps/core/admin.py to ensure it's loaded

@@ -325,18 +325,20 @@ class ConversationViewSet(viewsets.ViewSet):
                 user = request.user
                 try:
                     # Get or create customer linked to this user
+                    # Ensure we always have a proper name, not 'Unknown'
+                    proper_name = customer_name or user.get_full_name() or user.first_name or user.username
                     customer, created = Customer.objects.get_or_create(
                         user=user,
                         defaults={
-                            'name': customer_name or user.get_full_name() or user.username,
+                            'name': proper_name,
                             'email': customer_email or user.email,
                             'phone': customer_phone or f'user_{user.id}'
                         }
                     )
-                    # Update customer info if provided
+                    # Update customer info if provided or if name is 'Unknown'
                     updated = False
-                    if customer_name and customer.name != customer_name:
-                        customer.name = customer_name
+                    if not customer.name or customer.name == 'Unknown' or (customer_name and customer.name != customer_name):
+                        customer.name = proper_name
                         updated = True
                     if customer_email and customer.email != customer_email:
                         customer.email = customer_email

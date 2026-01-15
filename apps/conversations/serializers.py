@@ -4,6 +4,59 @@ from .models import Conversation
 from apps.core.serializers import CustomerSerializer
 
 
+class CustomerNameMixin:
+    """Mixin to provide customer name resolution methods."""
+    
+    def _get_user_from_customer_email(self, obj):
+        """Helper to get User from customer email."""
+        if obj.customer and obj.customer.email:
+            try:
+                from django.contrib.auth import get_user_model
+                User = get_user_model()
+                user = User.objects.filter(email=obj.customer.email).first()
+                # If found, link the user to the customer
+                if user and not obj.customer.user:
+                    obj.customer.user = user
+                    obj.customer.save(update_fields=['user'])
+                return user
+            except (ValueError, AttributeError):
+                pass
+        return None
+
+    def get_customer_name(self, obj):
+        """Get customer name."""
+        if not obj.customer:
+            return None
+        
+        # First, try to get name from linked User (if customer is linked to a user)
+        if obj.customer.user:
+            user = obj.customer.user
+            name = user.get_full_name() or user.first_name or user.username
+            if name and name.strip():
+                # Update Customer record if name is 'Unknown', empty, or different
+                if not obj.customer.name or obj.customer.name == 'Unknown' or obj.customer.name != name:
+                    obj.customer.name = name
+                    obj.customer.save(update_fields=['name'])
+                return name
+        
+        # Second, try from Customer model if it's not 'Unknown' or empty
+        if obj.customer.name and obj.customer.name != 'Unknown' and obj.customer.name.strip():
+            return obj.customer.name
+        
+        # Third, try to fetch from User model using customer email
+        user = self._get_user_from_customer_email(obj)
+        if user:
+            name = user.get_full_name() or user.first_name or user.username
+            if name and name.strip():
+                # Update Customer record if it exists
+                obj.customer.name = name
+                obj.customer.save(update_fields=['name'])
+                return name
+        
+        # No valid name found - return None instead of phone number or random text
+        return None
+
+
 class MessageSerializer(serializers.Serializer):
     """Serializer for individual messages."""
     id = serializers.IntegerField(required=False)
@@ -29,7 +82,7 @@ class MessageSerializer(serializers.Serializer):
         return timezone.now()
 
 
-class ConversationListSerializer(serializers.ModelSerializer):
+class ConversationListSerializer(CustomerNameMixin, serializers.ModelSerializer):
     """Serializer for conversation list (summary)."""
     customer_id = serializers.SerializerMethodField()
     customer_name = serializers.SerializerMethodField()
@@ -54,37 +107,6 @@ class ConversationListSerializer(serializers.ModelSerializer):
         if obj.customer:
             return obj.customer.id if obj.customer.id else None
         return None
-
-    def _get_user_from_customer_email(self, obj):
-        """Helper to get User from customer email."""
-        if obj.customer and obj.customer.email:
-            try:
-                from django.contrib.auth import get_user_model
-                User = get_user_model()
-                return User.objects.filter(email=obj.customer.email).first()
-            except (ValueError, AttributeError):
-                pass
-        return None
-
-    def get_customer_name(self, obj):
-        """Get customer name."""
-        # First try from Customer model
-        if obj.customer and obj.customer.name and obj.customer.name != 'Unknown':
-            return obj.customer.name
-        
-        # Try to fetch from User model using customer email
-        user = self._get_user_from_customer_email(obj)
-        if user:
-            name = user.get_full_name() or user.first_name or user.username
-            if name and name.strip():
-                # Update Customer record if it exists
-                if obj.customer:
-                    obj.customer.name = name
-                    obj.customer.save(update_fields=['name'])
-                return name
-        
-        # Fallback to Customer model or None
-        return obj.customer.name if obj.customer else None
 
     def get_customer_email(self, obj):
         """Get customer email."""
@@ -153,7 +175,7 @@ class ConversationListSerializer(serializers.ModelSerializer):
         return 'completed'
 
 
-class ConversationDetailSerializer(serializers.ModelSerializer):
+class ConversationDetailSerializer(CustomerNameMixin, serializers.ModelSerializer):
     """Serializer for single conversation with messages."""
     customer_id = serializers.SerializerMethodField()
     customer_name = serializers.SerializerMethodField()
@@ -191,37 +213,6 @@ class ConversationDetailSerializer(serializers.ModelSerializer):
         if obj.customer:
             return obj.customer.id if obj.customer.id else None
         return None
-
-    def _get_user_from_customer_email(self, obj):
-        """Helper to get User from customer email."""
-        if obj.customer and obj.customer.email:
-            try:
-                from django.contrib.auth import get_user_model
-                User = get_user_model()
-                return User.objects.filter(email=obj.customer.email).first()
-            except (ValueError, AttributeError):
-                pass
-        return None
-
-    def get_customer_name(self, obj):
-        """Get customer name."""
-        # First try from Customer model
-        if obj.customer and obj.customer.name and obj.customer.name != 'Unknown':
-            return obj.customer.name
-        
-        # Try to fetch from User model using customer email
-        user = self._get_user_from_customer_email(obj)
-        if user:
-            name = user.get_full_name() or user.first_name or user.username
-            if name and name.strip():
-                # Update Customer record if it exists
-                if obj.customer:
-                    obj.customer.name = name
-                    obj.customer.save(update_fields=['name'])
-                return name
-        
-        # Fallback to Customer model or None
-        return obj.customer.name if obj.customer else None
 
     def get_customer_email(self, obj):
         """Get customer email."""
