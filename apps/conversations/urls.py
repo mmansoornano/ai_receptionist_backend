@@ -1,7 +1,11 @@
 """URLs for conversations app."""
-from django.urls import path
-from .views import ConversationListView
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from .views import ConversationViewSet
+
+router = DefaultRouter()
+router.register(r'', ConversationViewSet, basename='conversation')
 
 urlpatterns = [
-    path('', ConversationListView.as_view(), name='conversation-list'),
+    path('', include(router.urls)),
 ]

@@ -7,8 +7,10 @@ from django.conf.urls.static import static
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('apps.core.urls')),
-    path('webhooks/', include('apps.webhooks.urls')),
+    path('api/auth/', include('apps.authentication.urls')),
     path('api/conversations/', include('apps.conversations.urls')),
+    path('api/analytics/', include('apps.core.analytics_urls')),
+    path('webhooks/', include('apps.webhooks.urls')),
 ]
 
 if settings.DEBUG:
