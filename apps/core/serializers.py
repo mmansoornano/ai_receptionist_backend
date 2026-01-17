@@ -1,10 +1,18 @@
 """DRF serializers for core models."""
 from rest_framework import serializers
-from .models import Customer, Appointment, Cart, CartItem, Payment, Order, Cancellation
+from .models import Customer, Appointment, Cart, CartItem, Payment, Order, Cancellation, Product
 from .product_catalog import get_product_name, get_product_price, is_valid_product
 from django.db.models import Sum
 
 DELIVERY_FEE = 150.0
+
+
+class ProductSerializer(serializers.ModelSerializer):
+    """Serializer for product catalog."""
+    class Meta:
+        model = Product
+        fields = ['product_id', 'name', 'price', 'description', 'category', 'is_active']
+        read_only_fields = fields
 
 
 class CustomerSerializer(serializers.ModelSerializer):

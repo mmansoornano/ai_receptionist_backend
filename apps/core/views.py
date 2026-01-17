@@ -8,13 +8,14 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django.http import JsonResponse
 from django.utils import timezone
 from django.db.models import Q
-from .models import Customer, Appointment, Cart, CartItem, Payment, Order, Cancellation, log_activity
+from .models import Customer, Appointment, Cart, CartItem, Payment, Order, Cancellation, Product, log_activity
 from .serializers import (
     CustomerSerializer, CustomerCreateSerializer, AppointmentSerializer,
     CartSerializer, CartItemSerializer, AddCartItemSerializer, UpdateCartItemSerializer,
     PaymentOTPSendSerializer, PaymentOTPVerifySerializer, PaymentConfirmSerializer,
     PaymentListSerializer, PaymentDetailSerializer, OrderSerializer, OrderListSerializer,
-    OrderDetailSerializer, CreateOrderSerializer, CancellationSerializer, SubmitCancellationSerializer
+    OrderDetailSerializer, CreateOrderSerializer, CancellationSerializer, SubmitCancellationSerializer,
+    ProductSerializer
 )
 from .product_catalog import get_product_name, get_product_price, is_valid_product
 
@@ -97,6 +98,16 @@ class CustomerViewSet(viewsets.ModelViewSet):
                 'success': False,
                 'error': error_msg
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class ProductViewSet(viewsets.ReadOnlyModelViewSet):
+    """Read-only viewset for product catalog."""
+    queryset = Product.objects.filter(is_active=True).order_by('category', 'name')
+    serializer_class = ProductSerializer
+    permission_classes = [AllowAny]
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['name', 'description', 'category', 'product_id']
+    ordering_fields = ['category', 'name', 'price']
 
     @action(detail=False, methods=['post'], url_path='address')
     def update_address(self, request):
