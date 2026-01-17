@@ -481,9 +481,21 @@ class ConversationViewSet(viewsets.ViewSet):
                 # Delete all conversations for this customer
                 deleted_count = Conversation.objects.filter(customer=customer).delete()[0]
 
+                # Clear cart for this customer
+                from apps.core.models import Cart
+                try:
+                    cart = Cart.objects.filter(customer_id=customer_id).first()
+                    if cart:
+                        cart.items.all().delete()
+                except Exception as cart_error:
+                    # Log but don't fail the reset if cart clearing fails
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.warning(f"Failed to clear cart during reset: {cart_error}")
+
                 return JsonResponse({
                     'success': True,
-                    'message': f'Reset {deleted_count} conversation(s)',
+                    'message': f'Reset {deleted_count} conversation(s) and cleared cart',
                     'deleted_count': deleted_count
                 }, status=status.HTTP_200_OK)
 
