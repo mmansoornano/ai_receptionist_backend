@@ -528,6 +528,12 @@ class PaymentViewSet(viewsets.ViewSet):
     """ViewSet for payment operations matching API spec - admin only."""
     permission_classes = [IsAdmin]
 
+    def get_permissions(self):
+        """Override to allow create_simple_payment without admin auth."""
+        if self.action == 'create_simple_payment':
+            return [AllowAny()]
+        return super().get_permissions()
+
     def list(self, request):
         """List payments with filters. GET /api/payments/"""
         try:
@@ -814,6 +820,68 @@ class PaymentViewSet(viewsets.ViewSet):
                 'status': 'completed',
                 'message': 'Payment confirmed successfully'
             }, status=status.HTTP_200_OK)
+        except Exception as e:
+            import traceback
+            from django.conf import settings
+            DEBUG = getattr(settings, 'DEBUG', False)
+            error_msg = str(e)
+            if DEBUG:
+                error_msg += f"\n\nTraceback:\n{traceback.format_exc()}"
+            return JsonResponse({
+                'success': False,
+                'error': error_msg
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(detail=False, methods=['post'], url_path='create-simple')
+    def create_simple_payment(self, request):
+        """Create payment directly with status=confirmed (for simplified flow). POST /api/payment/create-simple/"""
+        try:
+            from .models import Payment
+            import random
+            
+            mobile_number = request.data.get('mobile_number', '')
+            amount = float(request.data.get('amount', 0))
+            transaction_id = request.data.get('transaction_id', '')
+            customer_id = request.data.get('customer_id', '')
+            
+            if not mobile_number or amount <= 0:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'mobile_number and amount are required'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Generate transaction ID if not provided
+            if not transaction_id:
+                transaction_id = f"EP{random.randint(100000000, 999999999)}"
+            
+            # Create payment with confirmed status
+            payment = Payment.objects.create(
+                mobile_number=mobile_number,
+                amount=amount,
+                transaction_id=transaction_id,
+                status='confirmed',
+                payment_method='easypaisa'
+            )
+            
+            # Log activity
+            log_activity(
+                activity_type='payment',
+                action='Payment created (simplified flow)',
+                customer_id=customer_id or payment.id,
+                customer_name=mobile_number,
+                metadata={'transaction_id': transaction_id, 'amount': float(amount), 'payment_method': 'easypaisa'}
+            )
+            
+            from .serializers import PaymentDetailSerializer
+            payment_serializer = PaymentDetailSerializer(payment)
+            
+            return JsonResponse({
+                'success': True,
+                'payment': payment_serializer.data,
+                'transaction_id': transaction_id,
+                'amount': float(amount),
+                'status': 'confirmed'
+            }, status=status.HTTP_201_CREATED)
         except Exception as e:
             import traceback
             from django.conf import settings
