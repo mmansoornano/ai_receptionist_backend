@@ -11,7 +11,7 @@ from django.db.models import Q
 from .models import Customer, Appointment, Cart, CartItem, Payment, Order, Cancellation, Product, log_activity
 from .serializers import (
     CustomerSerializer, CustomerCreateSerializer, AppointmentSerializer,
-    CartSerializer, CartItemSerializer, AddCartItemSerializer, UpdateCartItemSerializer,
+    CartSerializer, CartItemSerializer, AddCartItemSerializer, AddCartItemBatchSerializer, UpdateCartItemSerializer,
     PaymentOTPSendSerializer, PaymentOTPVerifySerializer, PaymentConfirmSerializer,
     PaymentListSerializer, PaymentDetailSerializer, OrderSerializer, OrderListSerializer,
     OrderDetailSerializer, CreateOrderSerializer, CancellationSerializer, SubmitCancellationSerializer,
@@ -388,6 +388,67 @@ class CartViewSet(viewsets.ViewSet):
                 'error': error_msg if DEBUG else 'An error occurred while adding item to cart',
                 'customer_id': customer_id if 'customer_id' in locals() else 'unknown',
                 'product_id': product_id if 'product_id' in locals() else 'unknown'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(detail=False, methods=['post'], url_path='add-batch')
+    def add_batch(self, request):
+        """Add multiple items to cart. POST /api/cart/add-batch/
+        Body: { "customer_id": str, "items": [ { "product_id": str, "quantity": int }, ... ] }
+        """
+        try:
+            serializer = AddCartItemBatchSerializer(data=request.data)
+            if not serializer.is_valid():
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.warning("Cart add_batch 400: request.data=%s serializer.errors=%s", request.data, serializer.errors)
+                return JsonResponse({
+                    'success': False,
+                    'error': serializer.errors
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            data = serializer.validated_data
+            customer_id = self.get_customer_id_from_request(request) or data.get('customer_id', 'anonymous')
+            items = data['items']
+
+            cart = self.get_cart(customer_id)
+            errors = []
+
+            for entry in items:
+                product_id = entry['product_id']
+                quantity = entry['quantity']
+                if not is_valid_product(product_id):
+                    errors.append(f"Invalid product_id: {product_id}")
+                    continue
+                product_name = get_product_name(product_id)
+                product_price = get_product_price(product_id)
+                if not product_name or product_name == product_id or product_price is None or product_price == 0:
+                    errors.append(f"Product {product_id} not found or invalid")
+                    continue
+                cart_item, created = CartItem.objects.get_or_create(
+                    cart=cart,
+                    product_id=product_id,
+                    defaults={'name': product_name, 'quantity': quantity, 'price': product_price}
+                )
+                if not created:
+                    cart_item.quantity += quantity
+                    cart_item.save()
+
+            cart.refresh_from_db()
+            cart_serializer = CartSerializer(cart)
+            payload = {'success': True, 'cart': cart_serializer.data}
+            if errors:
+                payload['warnings'] = errors
+            return JsonResponse(payload, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            import traceback
+            import logging
+            from django.conf import settings
+            DEBUG = getattr(settings, 'DEBUG', False)
+            logger = logging.getLogger(__name__)
+            logger.error("Cart add_batch error: %s\n%s", str(e), traceback.format_exc(), exc_info=True)
+            return JsonResponse({
+                'success': False,
+                'error': str(e) if DEBUG else 'An error occurred while adding items to cart'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def list(self, request):

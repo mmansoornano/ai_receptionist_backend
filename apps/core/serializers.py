@@ -138,6 +138,23 @@ class AddCartItemSerializer(serializers.Serializer):
         return value
 
 
+class AddCartItemBatchItemSerializer(serializers.Serializer):
+    """Single item for batch add. Use exact product_ids only; no server-side alias resolution."""
+    product_id = serializers.CharField(required=True)
+    quantity = serializers.IntegerField(required=True, min_value=1)
+
+    def validate_product_id(self, value):
+        if not is_valid_product(value):
+            raise serializers.ValidationError(f"Invalid product_id: {value}")
+        return value
+
+
+class AddCartItemBatchSerializer(serializers.Serializer):
+    """Serializer for batch add to cart."""
+    customer_id = serializers.CharField(required=False, default='anonymous')
+    items = AddCartItemBatchItemSerializer(many=True, required=True, allow_empty=False)
+
+
 class UpdateCartItemSerializer(serializers.Serializer):
     """Serializer for updating cart item matching API spec."""
     quantity = serializers.IntegerField(required=True, min_value=1)
