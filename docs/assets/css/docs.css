@@ -1,0 +1,236 @@
+/* AI Receptionist Agent — documentation site */
+*, *::before, *::after { box-sizing: border-box; }
+
+:root {
+  --bg: #f4f7f9;
+  --surface: #ffffff;
+  --text: #0f172a;
+  --muted: #64748b;
+  --accent: #0d9488;
+  --accent-dark: #0f766e;
+  --header-start: #0c4a6e;
+  --header-end: #115e59;
+  --border: #e2e8f0;
+  --code-bg: #f0fdfa;
+  --shadow: 0 4px 24px rgba(15, 23, 42, 0.08);
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 1.05rem;
+  line-height: 1.65;
+  color: var(--text);
+  background: var(--bg);
+}
+
+.site-header {
+  background: linear-gradient(135deg, var(--header-start) 0%, #134e4a 50%, var(--header-end) 100%);
+  color: #ecfeff;
+  padding: 2rem 1.25rem 1.5rem;
+  box-shadow: var(--shadow);
+}
+
+.site-header-inner {
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.brand { display: flex; gap: 1rem; align-items: flex-start; }
+
+.brand-mark {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 12px;
+  background: linear-gradient(145deg, #2dd4bf, #0d9488);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  flex-shrink: 0;
+}
+
+.brand-eyebrow {
+  margin: 0 0 0.25rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  opacity: 0.85;
+}
+
+.brand-title {
+  margin: 0 0 0.35rem;
+  font-size: clamp(1.5rem, 4vw, 2rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.brand-desc {
+  margin: 0;
+  font-size: 0.98rem;
+  opacity: 0.92;
+  max-width: 42rem;
+}
+
+.site-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1.35rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid rgba(236, 254, 255, 0.2);
+}
+
+.site-nav a {
+  display: inline-block;
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #0f172a;
+  background: #ecfeff;
+  text-decoration: none;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  transition: background 0.15s, transform 0.15s;
+}
+
+.site-nav a:hover {
+  background: #fff;
+  transform: translateY(-1px);
+}
+
+.site-nav a.nav-github {
+  margin-left: auto;
+  background: rgba(15, 23, 42, 0.15);
+  color: #ecfeff;
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.site-nav a.nav-github:hover {
+  background: rgba(15, 23, 42, 0.28);
+  color: #fff;
+}
+
+.site-main {
+  max-width: 960px;
+  margin: -1rem auto 3rem;
+  padding: 0 1.25rem;
+}
+
+.prose {
+  background: var(--surface);
+  border-radius: 16px;
+  padding: 2rem 2.25rem;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+}
+
+.prose > :first-child { margin-top: 0; }
+.prose > :last-child { margin-bottom: 0; }
+
+.prose h1 {
+  font-size: 1.75rem;
+  color: var(--header-start);
+  margin-top: 0;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid var(--border);
+}
+
+.prose h2 {
+  font-size: 1.25rem;
+  color: var(--accent-dark);
+  margin-top: 2rem;
+}
+
+.prose h3 { font-size: 1.08rem; color: var(--text); margin-top: 1.5rem; }
+
+.prose a { color: var(--accent); font-weight: 600; }
+.prose a:hover { color: var(--accent-dark); }
+
+.prose code {
+  font-size: 0.9em;
+  background: var(--code-bg);
+  padding: 0.15em 0.4em;
+  border-radius: 6px;
+  border: 1px solid #99f6e4;
+}
+
+.prose pre {
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 1rem 1.15rem;
+  border-radius: 10px;
+  overflow-x: auto;
+  font-size: 0.88rem;
+}
+
+.prose pre code {
+  background: none;
+  border: none;
+  color: inherit;
+  padding: 0;
+}
+
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.prose th, .prose td {
+  border: 1px solid var(--border);
+  padding: 0.55rem 0.75rem;
+  text-align: left;
+}
+
+.prose th { background: #f8fafc; }
+
+.doc-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.doc-card {
+  display: block;
+  padding: 1.1rem 1.15rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, #f8fafc 0%, #fff 100%);
+  text-decoration: none;
+  color: var(--text);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+  transition: box-shadow 0.15s, border-color 0.15s, transform 0.15s;
+}
+
+.doc-card:hover {
+  border-color: #5eead4;
+  box-shadow: 0 8px 28px rgba(13, 148, 136, 0.12);
+  transform: translateY(-2px);
+  text-decoration: none;
+}
+
+.doc-card strong {
+  display: block;
+  font-size: 1.02rem;
+  color: var(--header-start);
+  margin-bottom: 0.35rem;
+}
+
+.doc-card span {
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.site-footer {
+  text-align: center;
+  padding: 2rem 1rem;
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.site-footer a { color: var(--accent); }
+
+@media (max-width: 640px) {
+  .site-nav a.nav-github { margin-left: 0; }
+}

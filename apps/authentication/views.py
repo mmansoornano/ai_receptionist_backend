@@ -49,29 +49,6 @@ def login_view(request):
                 'error': 'Invalid credentials'
             }, status=status.HTTP_401_UNAUTHORIZED)
 
-        # #region agent log
-        import json
-        try:
-            with open('/Users/home/Documents/Convsol/Agent/AI_receptionist_backend/.cursor/debug.log', 'a') as f:
-                f.write(json.dumps({
-                    'sessionId': 'debug-session',
-                    'runId': 'run1',
-                    'hypothesisId': 'A',
-                    'location': 'apps/authentication/views.py:45',
-                    'message': 'User authenticated - checking admin flags',
-                    'data': {
-                        'user_id': user.id,
-                        'username': user.username,
-                        'email': user.email,
-                        'is_staff': user.is_staff,
-                        'is_superuser': user.is_superuser,
-                        'hasattr_is_admin': hasattr(user, 'is_admin')
-                    },
-                    'timestamp': int(__import__('time').time() * 1000)
-                }) + '\n')
-        except: pass
-        # #endregion
-
         # Login user (creates session for web clients)
         login(request, user)
 
@@ -93,25 +70,6 @@ def login_view(request):
         # Check if user has is_admin attribute (custom field)
         if hasattr(user, 'is_admin'):
             user_response['is_admin'] = user.is_admin
-
-        # #region agent log
-        try:
-            with open('/Users/home/Documents/Convsol/Agent/AI_receptionist_backend/.cursor/debug.log', 'a') as f:
-                f.write(json.dumps({
-                    'sessionId': 'debug-session',
-                    'runId': 'run1',
-                    'hypothesisId': 'B',
-                    'location': 'apps/authentication/views.py:75',
-                    'message': 'Login response being built',
-                    'data': {
-                        'user_response': user_response,
-                        'has_access_token': bool(access_token),
-                        'has_refresh_token': bool(refresh_token)
-                    },
-                    'timestamp': int(__import__('time').time() * 1000)
-                }) + '\n')
-        except: pass
-        # #endregion
 
         return JsonResponse({
             'success': True,

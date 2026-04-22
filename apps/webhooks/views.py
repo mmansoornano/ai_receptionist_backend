@@ -208,9 +208,10 @@ def call_status(request):
 @csrf_exempt
 @require_POST
 def text_to_speech(request):
-    """Convert text to speech using Coqui TTS.
+    """Convert text to speech via voice service (Coqui/Piper/OpenAI).
     
-    Accepts text and returns audio WAV file.
+    Text is preprocessed (strip UI blocks, etc.) before synthesis.
+    Accepts JSON { \"text\": \"...\" } and returns audio WAV.
     """
     from utils.logger import log_api_request, log_error
     
@@ -226,19 +227,20 @@ def text_to_speech(request):
         if not text:
             return JsonResponse({'error': 'Text is required'}, status=400)
         
-        # Import voice service
+        from utils.tts_text import prepare_text_for_tts
         from services.voice_service import VoiceService
         
+        text_for_tts = prepare_text_for_tts(text)
         voice_service = VoiceService()
-        audio_data = voice_service.text_to_speech(text)
+        audio_data = voice_service.text_to_speech(text_for_tts)
         
-        # Return audio as response
         response = HttpResponse(audio_data, content_type='audio/wav')
         response['Content-Disposition'] = 'inline; filename="speech.wav"'
         response['Content-Length'] = len(audio_data)
         
         log_api_request("/webhooks/tts/", "POST", {
             "text_length": len(text),
+            "text_for_tts_length": len(text_for_tts),
             "audio_size": len(audio_data)
         })
         
