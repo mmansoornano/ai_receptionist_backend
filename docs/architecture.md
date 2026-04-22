@@ -14,10 +14,7 @@ The **backend** is the system of record and HTTP façade for:
 
 ## Architecture diagram
 
-<figure class="doc-figure">
-  <img src="{{ site.canonical_docs_url }}/assets/img/backend-architecture.svg" width="920" height="400" alt="Diagram: frontend, agent, and webhooks calling Django REST, with apps and services below" loading="lazy" decoding="async" />
-  <figcaption>High-level callers and Django boundary. SVG: <code>docs/assets/img/backend-architecture.svg</code>. If this image 404s, set <code>canonical_docs_url</code> in <code>docs/_config.yml</code> to match your GitHub Pages URL.</figcaption>
-</figure>
+{% include backend-architecture-figure.html %}
 
 ## Technology stack
 

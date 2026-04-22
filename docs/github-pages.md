@@ -18,6 +18,6 @@ canonical_docs_url: "https://mmansoornano.github.io/ai_receptionist_backend"
 github_repo: mmansoornano/ai_receptionist_backend
 ```
 
-Nav, cards, and **architecture diagram** images use **`canonical_docs_url`** so URLs stay under **`https://<user>.github.io/<repo>/…`** (using **`relative_url`** alone on `<img src>` can drop the repo prefix and 404 on Pages). **`relative_url`** is still used for **CSS** under **`/assets/css/`**, so **`baseurl`** must stay correct.
+Nav and cards use **`canonical_docs_url`**. The **architecture diagram** is an **inline SVG** in **`docs/_includes/backend-architecture-figure.html`**. **`relative_url`** is still used for **CSS** under **`/assets/css/`**, so **`baseurl`** must stay correct.
 
 [← Home]({{ site.canonical_docs_url }}/)

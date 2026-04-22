@@ -1,0 +1,42 @@
+<figure class="doc-figure doc-figure--inline-svg">
+  <div class="doc-figure-svg" aria-label="Frontend, agent, and webhooks calling Django REST">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 400" role="img">
+      <title>AI Receptionist Backend architecture</title>
+      <desc>Clients and the agent call Django; apps and services implement REST, webhooks, and voice.</desc>
+      <defs>
+        <linearGradient id="be-fig" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#0c4a6e"/>
+          <stop offset="100%" stop-color="#115e59"/>
+        </linearGradient>
+      </defs>
+      <rect x="0" y="0" width="920" height="400" fill="#f8fafc"/>
+      <text x="460" y="34" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="17" font-weight="700" fill="#0c4a6e">Django backend - who calls what</text>
+      <g font-family="Segoe UI,system-ui,sans-serif" font-size="13" fill="#0f172a">
+        <rect x="60" y="70" width="200" height="56" rx="10" fill="#ecfeff" stroke="#0d9488" stroke-width="2"/>
+        <text x="160" y="98" text-anchor="middle" font-weight="600">React frontend</text>
+        <text x="160" y="116" text-anchor="middle" font-size="11" fill="#475569">VITE_BACKEND_URL</text>
+        <rect x="300" y="70" width="200" height="56" rx="10" fill="#ecfeff" stroke="#0d9488" stroke-width="2"/>
+        <text x="400" y="98" text-anchor="middle" font-weight="600">Agent (FastAPI)</text>
+        <text x="400" y="116" text-anchor="middle" font-size="11" fill="#475569">tools to BACKEND_API_BASE_URL</text>
+        <rect x="540" y="70" width="200" height="56" rx="10" fill="#ecfeff" stroke="#0d9488" stroke-width="2"/>
+        <text x="640" y="98" text-anchor="middle" font-weight="600">Webhooks</text>
+        <text x="640" y="116" text-anchor="middle" font-size="11" fill="#475569">e.g. Twilio SMS / voice</text>
+        <rect x="280" y="170" width="360" height="64" rx="12" fill="url(#be-fig)" stroke="#134e4a" stroke-width="2"/>
+        <text x="460" y="200" text-anchor="middle" font-weight="700" fill="#ecfeff">Django REST API</text>
+        <text x="460" y="220" text-anchor="middle" font-size="12" fill="#ccfbf1">URLs, serializers, permissions, ORM</text>
+        <path d="M160 126 L160 200 L280 202" stroke="#94a3b8" stroke-width="2" fill="none"/>
+        <path d="M400 126 L400 170" stroke="#94a3b8" stroke-width="2" fill="none"/>
+        <path d="M640 126 L640 200 L640 202" stroke="#94a3b8" stroke-width="2" fill="none"/>
+        <polygon points="276,198 284,202 276,206" fill="#94a3b8"/>
+        <polygon points="396,166 400,174 404,166" fill="#94a3b8"/>
+        <rect x="80" y="278" width="760" height="92" rx="12" fill="#fff" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="460" y="306" text-anchor="middle" font-weight="600" fill="#0c4a6e">Project layout (high level)</text>
+        <text x="460" y="330" text-anchor="middle" font-size="12" fill="#475569">apps/ (core, conversations, webhooks), services/ (voice, TTS), utils/, config</text>
+        <text x="460" y="352" text-anchor="middle" font-size="12" fill="#475569">Optional: AGENT_API_URL when the backend calls the agent</text>
+        <path d="M460 234 L460 278" stroke="#94a3b8" stroke-width="1.5" fill="none"/>
+        <polygon points="456,274 460,282 464,274" fill="#94a3b8"/>
+      </g>
+    </svg>
+  </div>
+  <figcaption>High-level callers and the Django boundary (simplified).</figcaption>
+</figure>

@@ -247,6 +247,17 @@ body {
   background: var(--surface);
 }
 
+.doc-figure--inline-svg .doc-figure-svg svg {
+  display: block;
+  max-width: 100%;
+  width: min(100%, 920px);
+  height: auto;
+  margin: 0 auto;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
 .doc-figure figcaption {
   margin-top: 0.65rem;
   font-size: 0.9rem;
