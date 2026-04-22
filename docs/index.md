@@ -12,6 +12,7 @@ This **repository** is the **Django REST API**: catalog, cart, customers, paymen
   <a class="doc-card" href="{{ site.canonical_docs_url }}/integration.html"><strong>Integration</strong><span>Agent, frontend, and environment variables</span></a>
   <a class="doc-card" href="{{ site.canonical_docs_url }}/vendored-dia2.html"><strong>Vendored Dia2</strong><span>Voice source tree and clone implications</span></a>
   <a class="doc-card" href="{{ site.canonical_docs_url }}/dependencies.html"><strong>Dependencies</strong><span>Python stack and reproducible installs</span></a>
+  <a class="doc-card" href="{{ site.canonical_docs_url }}/testing.html"><strong>Testing</strong><span>Django test runner and agent integration</span></a>
   <a class="doc-card" href="{{ site.canonical_docs_url }}/github-pages.html"><strong>GitHub Pages</strong><span>How this documentation site is published</span></a>
 </div>
 
