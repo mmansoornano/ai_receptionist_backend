@@ -13,18 +13,18 @@
       <div class="brand">
         <span class="brand-mark" aria-hidden="true"></span>
         <div>
-          <p class="brand-eyebrow">REST API</p>
+          <p class="brand-eyebrow">Django REST</p>
           <h1 class="brand-title">{{ site.title }}</h1>
           <p class="brand-desc">{{ site.description }}</p>
         </div>
       </div>
       <nav class="site-nav" aria-label="Documentation">
-        <a href="{% link index.md %}">Home</a>
-        <a href="{% link architecture.md %}">Architecture</a>
-        <a href="{% link integration.md %}">Integration</a>
-        <a href="{% link dependencies.md %}">Dependencies</a>
-        <a href="{% link vendored-dia2.md %}">Dia2</a>
-        <a href="{% link github-pages.md %}">GitHub Pages</a>
+        <a href="{{ site.canonical_docs_url }}/">Home</a>
+        <a href="{{ site.canonical_docs_url }}/architecture.html">Architecture</a>
+        <a href="{{ site.canonical_docs_url }}/integration.html">Integration</a>
+        <a href="{{ site.canonical_docs_url }}/dependencies.html">Dependencies</a>
+        <a href="{{ site.canonical_docs_url }}/vendored-dia2.html">Dia2</a>
+        <a href="{{ site.canonical_docs_url }}/github-pages.html">GitHub Pages</a>
         {% if site.github_repo %}
         <a class="nav-github" href="https://github.com/{{ site.github_repo }}">View on GitHub</a>
         {% endif %}

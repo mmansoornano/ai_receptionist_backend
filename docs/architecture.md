@@ -21,4 +21,4 @@ The **backend** is the system of record and HTTP façade for:
 
 This backend reaches the agent when needed via **`AGENT_API_URL`** (see `.env.example`).
 
-[← Home]({{ "/" | relative_url }})
+[← Home]({{ site.canonical_docs_url }}/)

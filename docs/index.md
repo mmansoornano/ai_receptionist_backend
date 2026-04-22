@@ -3,18 +3,18 @@ layout: default
 title: Home
 ---
 
-# AI Receptionist Backend
+## Backend service overview
 
 This **repository** is the **Django REST API**: catalog, cart, customers, payments, conversations, webhooks (e.g. Twilio), and optional voice/TTS integration. It is deployed **independently** of the agent and frontend repos.
 
-## Documentation pages
-
-- [What this service does]({{ "/architecture.html" | relative_url }})
-- [Integrating with agent and frontend repos]({{ "/integration.html" | relative_url }})
-- [Vendored dia2 voice source]({{ "/vendored-dia2.html" | relative_url }})
-- [Dependencies]({{ "/dependencies.html" | relative_url }})
-- [Publish on GitHub Pages]({{ "/github-pages.html" | relative_url }})
+<div class="doc-cards">
+  <a class="doc-card" href="{{ site.canonical_docs_url }}/architecture.html"><strong>Architecture</strong><span>What this service does and how it fits in the stack</span></a>
+  <a class="doc-card" href="{{ site.canonical_docs_url }}/integration.html"><strong>Integration</strong><span>Agent, frontend, and environment variables</span></a>
+  <a class="doc-card" href="{{ site.canonical_docs_url }}/vendored-dia2.html"><strong>Vendored Dia2</strong><span>Voice source tree and clone implications</span></a>
+  <a class="doc-card" href="{{ site.canonical_docs_url }}/dependencies.html"><strong>Dependencies</strong><span>Python stack and reproducible installs</span></a>
+  <a class="doc-card" href="{{ site.canonical_docs_url }}/github-pages.html"><strong>GitHub Pages</strong><span>How this documentation site is published</span></a>
+</div>
 
 ## Runbook
 
-See the repository root **`README.md`** for install, `.env`, migrations, and runserver.
+See the repository root **`README.md`** for install, **`.env`**, migrations, and **`runserver`**.

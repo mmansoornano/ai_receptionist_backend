@@ -13,4 +13,4 @@ permalink: /vendored-dia2.html
 - **Larger clone** and CI checkout than an API-only backend.
 - Prefer documenting whether voice is required for your demo; if not, you may fork without this tree later.
 
-[← Home]({{ "/" | relative_url }})
+[← Home]({{ site.canonical_docs_url }}/)

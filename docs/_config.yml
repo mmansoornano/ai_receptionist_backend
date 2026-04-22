@@ -1,7 +1,13 @@
+# GitHub Pages: Settings → Pages → Branch main, folder /docs
+# Forks: set baseurl, url, canonical_docs_url, and github_repo to match the real Pages URL.
 title: AI Receptionist Backend
-description: Django REST API documentation
+description: Django REST API — catalog, cart, orders, payments, webhooks, agent integration
 
-baseurl: ""
-url: ""
+baseurl: "/ai_receptionist_backend"
+url: "https://mmansoornano.github.io"
+
+canonical_docs_url: "https://mmansoornano.github.io/ai_receptionist_backend"
+
+github_repo: mmansoornano/ai_receptionist_backend
 
 markdown: kramdown

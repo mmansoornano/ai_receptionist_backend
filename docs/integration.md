@@ -26,4 +26,4 @@ permalink: /integration.html
 
 CORS on **this** Django app must allow the frontend origin in production.
 
-[← Home]({{ "/" | relative_url }})
+[← Home]({{ site.canonical_docs_url }}/)

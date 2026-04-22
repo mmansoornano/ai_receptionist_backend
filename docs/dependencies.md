@@ -16,4 +16,4 @@ Freeze when you need a reproducible demo:
 pip freeze > requirements.lock.txt
 ```
 
-[← Home]({{ "/" | relative_url }})
+[← Home]({{ site.canonical_docs_url }}/)
