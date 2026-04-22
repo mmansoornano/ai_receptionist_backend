@@ -273,6 +273,40 @@ body {
   height: auto;
 }
 
+.scenario-turn-mock {
+  margin: 1.25rem 0;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: #0f172a;
+  color: #e2e8f0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  padding: 1rem 1.15rem;
+  text-align: left;
+  overflow-x: auto;
+}
+
+.scenario-turn-mock .sm-muted {
+  color: #64748b;
+}
+
+.scenario-turn-mock .sm-label {
+  color: #5eead4;
+  font-weight: 700;
+}
+
+.scenario-turn-mock .sm-body {
+  color: #f1f5f9;
+}
+
+.scenario-turn-mock-pre {
+  margin: 0;
+  font: inherit;
+  white-space: pre;
+  color: inherit;
+}
+
 @media (max-width: 640px) {
   .site-nav a.nav-github { margin-left: 0; }
 }

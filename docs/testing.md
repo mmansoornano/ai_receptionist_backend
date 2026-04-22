@@ -28,6 +28,8 @@ Today the repo ships a minimal example at **`auth/tests.py`**. Add **`tests.py`*
 
 The **agent** repo has **`tests/test_backend_integration.py`**, which calls your live Django base URL (**`BACKEND_API_BASE_URL`** in the agent’s **`.env`**). Bring this backend up (`runserver` or your deploy URL), then run that test module from the **agent** checkout with **`-m integration`**.
 
+LLM **scenario** runs (boxed **user input / router / time / agent output**, quiet logs unless a test fails) are documented on the **agent** repository’s GitHub Pages **Testing** page (`testing.html` in that repo’s `docs/` site).
+
 ## Related docs
 
 - [Architecture]({{ site.canonical_docs_url }}/architecture.html) — repository layout and testing column.
